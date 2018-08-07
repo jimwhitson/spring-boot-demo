@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.couchbase.client.java.*;
-import com.couchbase.client.java.document.*;
 import com.couchbase.client.java.document.json.*;
 import com.couchbase.client.java.query.*;
 
@@ -35,16 +34,20 @@ public class DemoController {
                         "store_pricing.product_id, " +
                         "store_pricing.store_group_id, " +
                         "store_pricing.store_prices[0] as latest_store_price")
-                .from(i("pricing3")).as("store_pricing")
+                .from(i("pricing")).as("store_pricing")
                 .where(x("store_pricing.type").eq(s("store_product"))
                         .and(x("store_pricing.product_id").eq(x("$prod_id")))
                         .and(x("store_pricing.store_id").eq(x("$store_id")))
         );
+
         JsonObject venv = JsonObject.create()
                 .put("prod_id", product_id)
                 .put("store_id", store_id);
+
         N1qlQuery query = N1qlQuery.parameterized(stmt, venv);
+
         N1qlQueryResult result = bucket.query(query);
+
         return result.allRows().toString();
     }
 }
