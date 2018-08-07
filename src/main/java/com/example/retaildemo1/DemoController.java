@@ -11,8 +11,8 @@ import com.couchbase.client.java.query.*;
 
 @RestController
 public class DemoController {
-    static public Cluster cluster;
-    static public Bucket bucket;
+    static private Cluster cluster;
+    static private Bucket bucket;
 
     static {
         cluster = CouchbaseCluster.create("couchbase://34.255.147.194");
@@ -20,18 +20,19 @@ public class DemoController {
         bucket = cluster.openBucket("pricing3");
     }
 
-    @RequestMapping("/store/{store_id}/product/{product_id}")
-    public String storeProductLookup(@PathVariable String product_id, @PathVariable String store_id) {
-        JsonDocument result = bucket.get(String.format("store::%s::product::%s", store_id, product_id));
-        return result.toString();
-    }
-
-    @RequestMapping("/product/{product_id}")
-    public String storeProductLookup(@PathVariable String product_id) {
+    @RequestMapping("/latest/{product_id}/{store_id}")
+    public String storeProductLookup(@PathVariable Integer product_id, @PathVariable Integer store_id) {
         N1qlQueryResult result = bucket.query(
-                N1qlQuery.parameterized("select * from pricing3 where foo = $1", JsonArray.from(product_id))
+                N1qlQuery.parameterized(
+                        "select store_pricing.store_id, " +
+                        "store_pricing.product_id, " +
+                        "store_pricing.store_group_id, " +
+                        "store_pricing.store_prices[0] as latest_store_price " +
+                        "FROM pricing3 as store_pricing " +
+                        "WHERE store_pricing.type=\"store_product\" " +
+                        "AND store_pricing.product_id = $1 " +
+                        "AND store_pricing.store_id = $2;", JsonArray.from(product_id, store_id))
         );
         return result.toString();
-
     }
 }
